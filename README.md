@@ -78,3 +78,26 @@ if err != nil {
 
 // do with your armored secret as you need
 ```
+
+### Auditing
+Every function that touches a secret takes a performer as the first argument. This could be used maybe to do something like this:
+
+```
+func auditPerformerHelper(detail string, userId string, ip string) string {
+    return fmt.Sprintf("%s-%s-%s", detail, userId, ip)
+}
+
+func retrieveMySecret(secretName string) (string, error) {
+    userId := 123 // Pull from your session
+    ip := "8.8.8.8" // Pull from your request
+
+    decryptedResult, err := engine.DecryptSecret(auditPerformerHelper(userId, ip, "retrieve-my-secret"), fmt.Sprintf("genericSecret/%s/%s", userId, secretName))
+    if err != nil {
+        return "", err
+    }
+
+    return decryptedResult, nil
+}
+```
+
+Now in your audit trail you can know what secret was accessed via what method and by who.
