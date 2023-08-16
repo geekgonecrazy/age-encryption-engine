@@ -4,6 +4,22 @@ Sponsored by [Lendiom](https://lendiom.com)
 
 ## Usage
 
+Expects at least 3 age public keys to be provided and 1 private key.  The public key to that private key must be in the list of public keys.
+
+On startup it will call a function to check that all secrets can be decrypted with the provided private key.
+
+### Generating Keys
+Visit the [age project](filippo.io/age) and download the age cli.
+
+```
+❯ age-keygen
+# created: 2023-02-13T14:07:43-06:00
+# public key: age1ytvwh068w6qcaflq9cld2ag8rf3482da08xnmgz67nd0vezwwflqeyhwpe
+AGE-SECRET-KEY-12YZRS0YPKYGKR0FK859QCU3DKP5CQZUKCK24F62E565WWDQDQ6RSSQLT2Y
+```
+
+Do that two more times.  Grab one of the private keys and put the other in a safe place.
+
 ### Setup
 ```
 package main
@@ -15,14 +31,24 @@ import (
 )
 
 func main() {
+	publicKeys := os.Getenv("AEE_PUBLIC_KEYS")
+	privateKey := os.Getenv("AEE_PRIVATE_KEY")
 
-	keys := []string{
-		"age1p5eeuhknfm7zemel2k3mth3wmt5qwtl57rhkflpl52gwupe0adkqsy3vgu",
-		"age1p5eeuhknfm7zemel2k3mth3wmt5qwtl57rhkflpl52gwupe0adkqsy3vgu",
-		"age1qtvvjtg7dh3n3zqk0m0h7qqj2h57s7akqy3dgk8gz4traqnwts9qmk8j7w",
+	if len(publicKeys) < 1 {
+		panic("AEE_PUBLIC_KEYS environment variable containing publicKeys is required to start")
 	}
 
-	privateKey := "AGE-SECRET-KEY-178Q8UQNDPPL24S9K3JPJ3LZTQQ3KGZAJPZVFDUGMG67S99R5JH3QQ8Z64M"
+	if len(privateKey) < 1 {
+		panic("AEE_PRIVATE_KEY environment variable containing encryption key is required to start")
+	}
+
+	if err := engine.AddEncryptionKeys(strings.Split(publicKeys, ",")); err != nil {
+		panic(err)
+	}
+
+	if err := engine.AddDecryptionKey(privateKey); err != nil {
+		panic(err)
+	}
 
 	engine := aee.New()
 
@@ -63,6 +89,12 @@ func main() {
 		// handle - common cases would be not enough keys or no matching public key for your private key
 	}
 }
+```
+
+This case assumes you'd start up with environment variables something like:
+```
+AEE_PUBLIC_KEYS=age1ytvwh068w6qcaflq9cld2ag8rf3482da08xnmgz67nd0vezwwflqeyhwpe,age1g5985y3242h3lwsq6f044324a0dgd2ss3w2ymmdq0gwr2359a5qsvd3dm2,age1320sl3g4jhrhs22gd3gy386pss3jxkr97g4sn4pmrtzjkdp8r98q5gxhkn
+AEE_PRIVATE_KEY=AGE-SECRET-KEY-1WDLSS8XJD0PSG9GUNUGHASA7TET0PM6RUCQEUEZ0RC95VYH2KJWQD0A46Y
 ```
 
 ### StoreSecret
