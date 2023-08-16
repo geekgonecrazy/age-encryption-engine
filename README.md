@@ -6,59 +6,77 @@ Sponsored by [Lendiom](https://lendiom.com)
 
 ### Setup
 ```
-keys := []string{
-    "age1p5eeuhknfm7zemel2k3mth3wmt5qwtl57rhkflpl52gwupe0adkqsy3vgu",
-    "age1p5eeuhknfm7zemel2k3mth3wmt5qwtl57rhkflpl52gwupe0adkqsy3vgu",
-    "age1qtvvjtg7dh3n3zqk0m0h7qqj2h57s7akqy3dgk8gz4traqnwts9qmk8j7w" # publicKey for our private key
-}
+package main
 
-privateKey := "AGE-SECRET-KEY-178Q8UQNDPPL24S9K3JPJ3LZTQQ3KGZAJPZVFDUGMG67S99R5JH3QQ8Z64M"
+import (
+	"fmt"
 
-engine := New()
+	aee "github.com/geekgonecrazy/age-encryption-engine"
+)
 
-if err := engine.AddEncryptionKeys(keys); err != nil {
-    // Handle error
-}
+func main() {
 
-if err := engine.AddDecryptionKey(privateKey); err != nil {
-    // Handle error
-}
+	keys := []string{
+		"age1p5eeuhknfm7zemel2k3mth3wmt5qwtl57rhkflpl52gwupe0adkqsy3vgu",
+		"age1p5eeuhknfm7zemel2k3mth3wmt5qwtl57rhkflpl52gwupe0adkqsy3vgu",
+		"age1qtvvjtg7dh3n3zqk0m0h7qqj2h57s7akqy3dgk8gz4traqnwts9qmk8j7w",
+	}
 
-engine.RegisterAuditHandler(func(performer, action, key string) error {
-    // Logic to write audit log to your audit system
+	privateKey := "AGE-SECRET-KEY-178Q8UQNDPPL24S9K3JPJ3LZTQQ3KGZAJPZVFDUGMG67S99R5JH3QQ8Z64M"
 
-    return nil
-})
+	engine := aee.New()
 
-engine.RegisterSaveHandler(func(perfomer, key, encryptedData string) error {
-    // Logic to write your secret to persistant storage
+	if err := engine.AddEncryptionKeys(keys); err != nil {
+		// Handle error
+	}
 
-    return nil
-})
+	if err := engine.AddDecryptionKey(privateKey); err != nil {
+		// Handle error
+	}
 
-engine.RegisterReadHandler(func(key string) (string, error) {
-    // Logic to read secret from persistant storage
+	engine.RegisterAuditHandler(func(action aee.SecretAuditAction) error {
+		// Replace with your own logic to save audit log
+		fmt.Printf("performer:%s\naction:%s\nkey:%s", action.Performer, action.Action, action.Key)
 
-    return value, nil
-})
+		return nil
+	})
 
-if err := engine.Start(); err != nil {
-    // handle - common cases would be not enough keys or no matching public key for your private key
+	engine.RegisterSaveHandler(func(action aee.Secret) error {
+		// Logic to write your secret to persistant storage
+
+		return nil
+	})
+
+	engine.RegisterReadHandler(func(key string) (aee.Secret, error) {
+		// Logic to read secret from persistant storage
+
+		return value, nil
+	})
+
+	engine.RegisterAreThereUnDecryptableSecretsHandler(func(publicKey string) (bool, error) {
+		// The engine takes the private key and gets its public key.  Then calls this function giving you a chance to find any secrets that won't be able to be decrypted by this key.  See test suite for an example of how this works using in memory db
+
+		return false, nil
+	})
+
+	if err := engine.Start(); err != nil {
+		// handle - common cases would be not enough keys or no matching public key for your private key
+	}
 }
 ```
 
-### EncryptSecret
+### StoreSecret
 
 ```
-if err := engine.EncryptSecret("func-updateSecret", "organization/{id}/customer/{id}/secret", "super-secret-words-here"); err != nil {
+if err := engine.StoreSecret("func-updateSecret", "organization/{id}/customer/{id}/secret", "super-secret-words-here"); err != nil {
     // Handle your error
 }
 ```
 
-### DecryptSecret
+### RetrieveSecret
 
 ```
-decryptedResult, err := engine.DecryptSecret("func-readSecret", "organization/{id}/customer/{id}/secret")
+decryptedResult, err := engine.Retrieve("func-readSecret", "organization/{id}/customer/{id}/secret")
 if err != nil {
     // Handle your error
 }
