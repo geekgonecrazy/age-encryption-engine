@@ -42,22 +42,14 @@ func main() {
 		panic("AEE_PRIVATE_KEY environment variable containing encryption key is required to start")
 	}
 
+	engine := aee.New()
+
 	if err := engine.AddEncryptionKeys(strings.Split(publicKeys, ",")); err != nil {
 		panic(err)
 	}
 
 	if err := engine.AddDecryptionKey(privateKey); err != nil {
 		panic(err)
-	}
-
-	engine := aee.New()
-
-	if err := engine.AddEncryptionKeys(keys); err != nil {
-		// Handle error
-	}
-
-	if err := engine.AddDecryptionKey(privateKey); err != nil {
-		// Handle error
 	}
 
 	engine.RegisterAuditHandler(func(action aee.SecretAuditAction) error {
